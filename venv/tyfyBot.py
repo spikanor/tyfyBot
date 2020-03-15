@@ -4,6 +4,8 @@ import pymongo
 from pymongo import MongoClient
 import requests
 import asyncio
+import random
+from bson import ObjectId
 
 import config
 import exceptions
@@ -12,6 +14,7 @@ import exceptions
 config = config.config()
 mongo_client = MongoClient("mongodb+srv://justinxu:gunsnrosesomg123@cluster0-phv8p.mongodb.net/test?retryWrites=true&w=majority")
 twitch_db = mongo_client["tyfyBot"]["Twitch"]
+pasta_db = mongo_client["tyfyBot"]["Pastas"]
 discord_client = commands.Bot(command_prefix='ty!')
 
 
@@ -83,6 +86,32 @@ async def twitch_name(ctx, twitch_name=""):
                 await ctx.send("Twitch name not set.")
 
 @discord_client.command(pass_context=True)
+async def pasta(ctx, new_pasta=""):
+    if new_pasta:
+        if has_role(ctx, config.get_role(ctx.guild.name, "admin")):
+            pasta_db.insert_one({"text" : new_pasta})
+            await ctx.send("New pasta added.")
+        else:
+            await ctx.send("Must have '" + config.get_role(ctx.guild.name, "admin") + "' role to use this command.")
+    else:
+        pasta = pasta_db.find()[random.randrange(pasta_db.count())]
+        await ctx.send(pasta["text"] + block_text("ID: " + str(pasta["_id"])))
+
+@discord_client.command(pass_context=True)
+async def rm_pasta(ctx, id=""):
+    if is_private(ctx):
+        await ctx.send("Must use command in server.")
+    elif not id:
+        await ctx.send("Please provide a pasta ID.")
+    else:
+        query = {"_id" : ObjectId(id)}
+        if not id.isalnum() or pasta_db.find(query).count() == 0:
+            await ctx.send("Not a valid id.")
+        else:
+            pasta_db.delete_one(query)
+            await ctx.send("Deleted.")
+
+@discord_client.command(pass_context=True)
 async def nword(ctx):
     if is_private(ctx):
         await ctx.send("Try that shit in a server, I dare you.")
@@ -120,6 +149,9 @@ def twitch_GET(url, params):
 
 def is_clean_input(inputString):
     return len(inputString) == len(inputString.encode())
+
+def block_text(text):
+    return "`\n" + text + "\n`"
 
 
 discord_client.loop.create_task(check_twitch_live())
