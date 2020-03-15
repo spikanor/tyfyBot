@@ -3,7 +3,7 @@ from json import JSONDecodeError
 
 import exceptions
 
-class config:
+class ConfigManager:
     config_path = "config.json"
     def __init__(self):
         try:
@@ -11,10 +11,10 @@ class config:
                 self.config = json.load(config_file)
         except ValueError and JSONDecodeError:
             print("Invalid JSON file")
-            exit(0)
+            exit(1)
         except FileNotFoundError:
             print("config.json not found")
-            exit(0)
+            exit(1)
 
         # Constants
         self.TOKEN = self.config["token"]
@@ -47,7 +47,7 @@ class config:
                 self.config = json.dump(self.config, config_file, indent=2)
         except ValueError and JSONDecodeError:
             print("Invalid JSON file")
-            exit(0)
+            exit(1)
         except FileNotFoundError:
             print("config.json not found")
-            exit(0)
+            exit(1)

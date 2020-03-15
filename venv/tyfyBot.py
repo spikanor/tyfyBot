@@ -5,13 +5,14 @@ from pymongo import MongoClient
 import requests
 import asyncio
 import random
+import bson
 from bson import ObjectId
 
-import config
+import ConfigManager
 import exceptions
 
 
-config = config.config()
+config = ConfigManager.ConfigManager()
 mongo_client = MongoClient("mongodb+srv://justinxu:gunsnrosesomg123@cluster0-phv8p.mongodb.net/test?retryWrites=true&w=majority")
 twitch_db = mongo_client["tyfyBot"]["Twitch"]
 pasta_db = mongo_client["tyfyBot"]["Pastas"]
@@ -21,7 +22,7 @@ discord_client = commands.Bot(command_prefix='ty!')
 # Events
 @discord_client.event
 async def on_ready():
-    print("\tReady")
+    print("--Ready--")
 
 @discord_client.event
 async def check_twitch_live():
@@ -29,9 +30,8 @@ async def check_twitch_live():
     while not discord_client.is_closed():
         streamers = twitch_db.find({})
         for streamer in streamers:
-            data = twitch_GET(config.TWITCH_STREAMS_API, {"user_login" : streamer["twitch_name"]})
+            data = twitch_get(config.TWITCH_STREAMS_API, {"user_login" : streamer["twitch_name"]})
             query = {"twitch_name" : streamer["twitch_name"], "guild_id" : streamer["guild_id"]}
-            print("Searching for " + streamer["twitch_name"] + " in guild " + discord_client.get_guild(streamer["guild_id"]).name + "...")
             try:
                 if data["data"] and not streamer["is_live"]:
                     twitch_db.update_one(query, {"$set": {"is_live": True}})
@@ -44,20 +44,18 @@ async def check_twitch_live():
                     twitch_db.update_one(query, {"$set": {"is_live": False}})
             except KeyError:
                 continue
-        print("\t\tsleeping...")
         await asyncio.sleep(5)
 
 
 # Commands
 @discord_client.command(pass_context=True)
-async def twitch_name(ctx, twitch_name=""):
+async def twitchname(ctx, twitch_name=""):
     if is_private(ctx):
         await ctx.send("Use this command in a server.")
     elif not has_role(ctx, config.get_role(ctx.guild.name, "twitch_streamer")):
-        print(config.get_role(ctx.guild.name, "twitch_streamer"))
         await ctx.send("Must have the '" + config.get_role(ctx.guild.name, "twitch_streamer") + "' role to use this command.")
     else:
-        if not is_clean_input(twitch_name):
+        if not is_clean_input(twitchname):
             await ctx.send("Please enter ASCII characters only.")
             return
         guild_id = ctx.message.channel.guild.id
@@ -66,7 +64,7 @@ async def twitch_name(ctx, twitch_name=""):
 
         # Set twitch name
         if twitch_name:
-            data = twitch_GET(config.TWITCH_USERS_API, {"login": twitch_name})
+            data = twitch_get(config.TWITCH_USERS_API, {"login": twitch_name})
             if not data["data"]:
                 await ctx.send("Invalid username.")
             else:
@@ -88,25 +86,33 @@ async def twitch_name(ctx, twitch_name=""):
 @discord_client.command(pass_context=True)
 async def pasta(ctx, new_pasta=""):
     if new_pasta:
-        if has_role(ctx, config.get_role(ctx.guild.name, "admin")):
+        if not is_clean_input(new_pasta):
+            await ctx.send("Please enter ASCII characters only.")
+        elif not has_role(ctx, config.get_role(ctx.guild.name, "admin")):
+            await ctx.send("Must have '" + config.get_role(ctx.guild.name, "admin") + "' role to use this command.")
+        else:
             pasta_db.insert_one({"text" : new_pasta})
             await ctx.send("New pasta added.")
-        else:
-            await ctx.send("Must have '" + config.get_role(ctx.guild.name, "admin") + "' role to use this command.")
     else:
-        pasta = pasta_db.find()[random.randrange(pasta_db.count())]
-        await ctx.send(pasta["text"] + block_text("ID: " + str(pasta["_id"])))
+        random_pasta = pasta_db.find()[random.randrange(pasta_db.count())]
+        await ctx.send(random_pasta["text"] + block_text("ID: " + str(random_pasta["_id"])))
 
 @discord_client.command(pass_context=True)
-async def rm_pasta(ctx, id=""):
+async def rm_pasta(ctx, pasta_id=""):
     if is_private(ctx):
         await ctx.send("Must use command in server.")
-    elif not id:
+    elif not pasta_id:
         await ctx.send("Please provide a pasta ID.")
+    elif not has_role(ctx, config.get_role(ctx.guild.name, "admin")):
+        await ctx.send("Must have '" + config.get_role(ctx.guild.name, "admin") + "' role to use this command.")
     else:
-        query = {"_id" : ObjectId(id)}
-        if not id.isalnum() or pasta_db.find(query).count() == 0:
-            await ctx.send("Not a valid id.")
+        try:
+            query = {"_id" : ObjectId(pasta_id)}
+        except bson.errors.InvalidId:
+            await ctx.send("Invalid ID.")
+            return
+        if pasta_db.find(query).count() == 0:
+            await ctx.send("Pasta ID not found.")
         else:
             pasta_db.delete_one(query)
             await ctx.send("Deleted.")
@@ -142,13 +148,13 @@ def is_private(ctx):
 def has_role(ctx, role_name):
     return discord.utils.get(ctx.guild.roles, name=role_name) in ctx.message.author.roles
 
-def twitch_GET(url, params):
+def twitch_get(url, params):
     header = {"Client-ID": 't0fw98983za1rmuv7pfqli0wrta1hd'}
     request = requests.get(url=url, params=params, headers=header)
     return request.json()
 
-def is_clean_input(inputString):
-    return len(inputString) == len(inputString.encode())
+def is_clean_input(input_string):
+    return len(input_string) == len(input_string.encode())
 
 def block_text(text):
     return "`\n" + text + "\n`"
