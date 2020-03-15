@@ -4,9 +4,10 @@ import pymongo
 from pymongo import MongoClient
 import requests
 import asyncio
-import sys
 
 import config
+import exceptions
+
 
 config = config.config()
 mongo_client = MongoClient("mongodb+srv://justinxu:gunsnrosesomg123@cluster0-phv8p.mongodb.net/test?retryWrites=true&w=majority")
@@ -28,15 +29,18 @@ async def check_twitch_live():
             data = twitch_GET(config.TWITCH_STREAMS_API, {"user_login" : streamer["twitch_name"]})
             query = {"twitch_name" : streamer["twitch_name"], "guild_id" : streamer["guild_id"]}
             print("Searching for " + streamer["twitch_name"] + " in guild " + discord_client.get_guild(streamer["guild_id"]).name + "...")
-            if data["data"] and not streamer["is_live"]:
-                twitch_db.update_one(query, {"$set": {"is_live": True}})
-                streamer_guild = discord_client.get_guild(streamer["guild_id"])
-                streamer_member = streamer_guild.get_member_named(streamer["discord_name"])
-                streams_channel = discord.utils.get(streamer_guild.text_channels, name=config.LIVE_STREAMS_CHANNEL)
-                if streams_channel:
-                    await streams_channel.send(streamer_member.mention + " is now live at " + config.TWITCH_URL + streamer["twitch_name"])
-            elif not data["data"] and streamer["is_live"]:
-                twitch_db.update_one(query, {"$set": {"is_live": False}})
+            try:
+                if data["data"] and not streamer["is_live"]:
+                    twitch_db.update_one(query, {"$set": {"is_live": True}})
+                    streamer_guild = discord_client.get_guild(streamer["guild_id"])
+                    streamer_member = streamer_guild.get_member_named(streamer["discord_name"])
+                    streams_channel = discord.utils.get(streamer_guild.text_channels, name=config.get_channel(streamer_guild.name, "live_streams"))
+                    if streams_channel:
+                        await streams_channel.send(streamer_member.mention + " is now live at " + config.TWITCH_URL + streamer["twitch_name"])
+                elif not data["data"] and streamer["is_live"]:
+                    twitch_db.update_one(query, {"$set": {"is_live": False}})
+            except KeyError:
+                continue
         print("\t\tsleeping...")
         await asyncio.sleep(5)
 
@@ -46,8 +50,9 @@ async def check_twitch_live():
 async def twitch_name(ctx, twitch_name=""):
     if is_private(ctx):
         await ctx.send("Use this command in a server.")
-    elif not has_role(ctx, config.TWITCH_STREAMER_ROLE):
-        await ctx.send("Must have the '" + config.TWITCH_STREAMER_ROLE + "' role to use this command.")
+    elif not has_role(ctx, config.get_role(ctx.guild.name, "twitch_streamer")):
+        print(config.get_role(ctx.guild.name, "twitch_streamer"))
+        await ctx.send("Must have the '" + config.get_role(ctx.guild.name, "twitch_streamer") + "' role to use this command.")
     else:
         if not is_clean_input(twitch_name):
             await ctx.send("Please enter ASCII characters only.")
@@ -78,14 +83,28 @@ async def twitch_name(ctx, twitch_name=""):
                 await ctx.send("Twitch name not set.")
 
 @discord_client.command(pass_context=True)
+async def nword(ctx):
+    if is_private(ctx):
+        await ctx.send("Try that shit in a server, I dare you.")
+    else:
+        try:
+            await ctx.send("Later, " + ctx.message.author.name + ".")
+            await ctx.message.author.kick(reason="get fucked idiot")
+            await discord_client.send_message(ctx.message.author, "get fucked idiot")
+        except discord.Forbidden:
+            await ctx.send("You'll get away, this time.")
+
+@discord_client.command(pass_context=True)
 async def close(ctx):
     if is_private(ctx):
         await ctx.send("Must use command in server.")
-    elif not has_role(ctx, config.ADMIN_ROLE):
-        await ctx.send("Must have '" + config.ADMIN_ROLE + "' to use this command.")
+    elif not has_role(ctx, config.get_role(ctx.guild.name, "admin")):
+        await ctx.send("Must have '" + config.get_role(ctx.guild.name, "admin") + "' role to use this command.")
     else:
         await ctx.send("**CY@**")
+        config.update_config_json()
         await discord_client.close()
+
 
 # Helpers
 def is_private(ctx):
