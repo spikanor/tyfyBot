@@ -19,6 +19,7 @@ class ConfigManager:
         # Constants
         self.MONGODB_TOKEN = self.config["mongodb_token"]
         self.DISCORD_TOKEN = self.config["discord_token"]
+        self.TWITCH_CLIENT_ID = self.config["twitch_client_id"]
         self.TWITCH_URL = self.config["twitch_links"]["twitch_url"]
         self.TWITCH_STREAMS_API = self.config["twitch_links"]["twitch_streams_api"]
         self.TWITCH_USERS_API = self.config["twitch_links"]["twitch_users_api"]

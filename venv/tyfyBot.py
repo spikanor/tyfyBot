@@ -119,6 +119,27 @@ async def rm_pasta(ctx, pasta_id=""):
             await ctx.send("Deleted.")
 
 @discord_client.command(pass_context=True)
+async def purge(ctx, purgenum = ""):
+    try:
+        n = int(purgenum)
+        if is_private(ctx):
+            await ctx.send("Must use command in server.")
+        elif not purgenum:
+            await ctx.send("Enter a number to purge.")
+        elif n < 0:
+            await ctx.send("Please enter a positive number")
+        else:
+            listmsg = await ctx.message.channel.purge(limit=int(purgenum) + 2)
+            await ctx.send("Purged " + str(len(listmsg)) + " messages.")
+    except ValueError:
+        await ctx.send("Please enter a number.")
+        return
+
+
+
+
+
+@discord_client.command(pass_context=True)
 async def nword(ctx):
     if is_private(ctx):
         await ctx.send("Try that shit in a server, I dare you.")
@@ -150,7 +171,7 @@ def has_role(ctx, role_name):
     return discord.utils.get(ctx.guild.roles, name=role_name) in ctx.message.author.roles
 
 def twitch_get(url, params):
-    header = {"Client-ID": 't0fw98983za1rmuv7pfqli0wrta1hd'}
+    header = {"Client-ID": config.TWITCH_CLIENT_ID}
     request = requests.get(url=url, params=params, headers=header)
     return request.json()
 
