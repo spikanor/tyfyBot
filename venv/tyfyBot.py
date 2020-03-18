@@ -13,7 +13,7 @@ import exceptions
 
 # Objects
 config = ConfigManager.ConfigManager()
-mongo_client = MongoClient("mongodb+srv://justinxu:iamtyfTragic@cluster0-phv8p.mongodb.net/test?retryWrites=true&w=majority")
+mongo_client = MongoClient(config.MONGODB_TOKEN)
 twitch_db = mongo_client["tyfyBot"]["Twitch"]
 pasta_db = mongo_client["tyfyBot"]["Pastas"]
 discord_client = commands.Bot(command_prefix='ty!')
@@ -162,4 +162,4 @@ def block_text(text):
 
 
 discord_client.loop.create_task(check_twitch_live())
-discord_client.run(config.TOKEN)
+discord_client.run(config.DISCORD_TOKEN)
