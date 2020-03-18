@@ -11,9 +11,9 @@ from bson import ObjectId
 import ConfigManager
 import exceptions
 
-
+# Objects
 config = ConfigManager.ConfigManager()
-mongo_client = MongoClient("mongodb+srv://justinxu:gunsnrosesomg123@cluster0-phv8p.mongodb.net/test?retryWrites=true&w=majority")
+mongo_client = MongoClient("mongodb+srv://justinxu:iamtyfTragic@cluster0-phv8p.mongodb.net/test?retryWrites=true&w=majority")
 twitch_db = mongo_client["tyfyBot"]["Twitch"]
 pasta_db = mongo_client["tyfyBot"]["Pastas"]
 discord_client = commands.Bot(command_prefix='ty!')
@@ -39,12 +39,13 @@ async def check_twitch_live():
                     streamer_member = streamer_guild.get_member_named(streamer["discord_name"])
                     streams_channel = discord.utils.get(streamer_guild.text_channels, name=config.get_channel(streamer_guild.name, "live_streams"))
                     if streams_channel:
+                        print(streamer_member.name + " from guild " + streamer_guild.name + " live")
                         await streams_channel.send(streamer_member.mention + " is now live at " + config.TWITCH_URL + streamer["twitch_name"])
                 elif not data["data"] and streamer["is_live"]:
                     twitch_db.update_one(query, {"$set": {"is_live": False}})
             except KeyError:
                 continue
-        await asyncio.sleep(5)
+        await asyncio.sleep(20)
 
 
 # Commands
@@ -55,7 +56,7 @@ async def twitchname(ctx, twitch_name=""):
     elif not has_role(ctx, config.get_role(ctx.guild.name, "twitch_streamer")):
         await ctx.send("Must have the '" + config.get_role(ctx.guild.name, "twitch_streamer") + "' role to use this command.")
     else:
-        if not is_clean_input(twitchname):
+        if not is_clean_input(twitch_name):
             await ctx.send("Please enter ASCII characters only.")
             return
         guild_id = ctx.message.channel.guild.id
