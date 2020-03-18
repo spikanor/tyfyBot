@@ -122,18 +122,18 @@ async def rm_pasta(ctx, pasta_id=""):
 async def purge(ctx, purgenum = ""):
     try:
         n = int(purgenum)
-        if is_private(ctx):
-            await ctx.send("Must use command in server.")
-        elif not purgenum:
-            await ctx.send("Enter a number to purge.")
-        elif n < 0:
-            await ctx.send("Please enter a positive number")
-        else:
-            listmsg = await ctx.message.channel.purge(limit=int(purgenum) + 2)
-            await ctx.send("Purged " + str(len(listmsg)) + " messages.")
     except ValueError:
         await ctx.send("Please enter a number.")
         return
+    if is_private(ctx):
+        await ctx.send("Must use command in server.")
+    elif not purgenum:
+        await ctx.send("Enter a number to purge.")
+    elif n < 0:
+        await ctx.send("Please enter a positive number.")
+    else:
+        purge_list = await ctx.message.channel.purge(limit=int(purgenum) + 1)
+        await ctx.send("Purged " + str(len(purge_list)) + " messages.")
 
 
 
