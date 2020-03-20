@@ -26,16 +26,16 @@ class ConfigManager:
 
 
     def get_role(self, guild, role):
-        return self.config_get(guild, "roles", role)
+        return self.config_get(str(guild.id), "roles", role)
 
     def get_channel(self, guild, channel):
-        return self.config_get(guild, "channels", channel)
+        return self.config_get(str(guild.id), "channels", channel)
 
-    def config_get(self, guild, group, element):
-        if guild in self.config["guilds"] and \
-                group in self.config["guilds"][guild] and \
-                element in self.config["guilds"][guild][group]:
-            return self.config["guilds"][guild][group][element]
+    def config_get(self, guild_id, group, element):
+        if guild_id in self.config["guilds"] and \
+                group in self.config["guilds"][guild_id] and \
+                element in self.config["guilds"][guild_id][group]:
+            return self.config["guilds"][guild_id][group][element]
         else:
             try:
                 return self.config["guilds"]["default"][group][element]

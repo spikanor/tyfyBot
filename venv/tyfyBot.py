@@ -53,8 +53,8 @@ async def check_twitch_live():
 async def twitchname(ctx, twitch_name=""):
     if is_private(ctx):
         await ctx.send("Use this command in a server.")
-    elif not has_role(ctx, config.get_role(ctx.guild.name, "twitch_streamer")):
-        await ctx.send("Must have the '" + config.get_role(ctx.guild.name, "twitch_streamer") + "' role to use this command.")
+    elif not has_role(ctx, config.get_role(ctx.guild, "twitch_streamer")):
+        await ctx.send("Must have the '" + config.get_role(ctx.guild, "twitch_streamer") + "' role to use this command.")
     else:
         if not is_clean_input(twitch_name):
             await ctx.send("Please enter ASCII characters only.")
@@ -89,8 +89,8 @@ async def pasta(ctx, new_pasta=""):
     if new_pasta:
         if not is_clean_input(new_pasta):
             await ctx.send("Please enter ASCII characters only.")
-        elif not has_role(ctx, config.get_role(ctx.guild.name, "admin")):
-            await ctx.send("Must have '" + config.get_role(ctx.guild.name, "admin") + "' role to use this command.")
+        elif not has_role(ctx, config.get_role(ctx.guild, "admin")):
+            await ctx.send("Must have '" + config.get_role(ctx.guild, "admin") + "' role to use this command.")
         else:
             pasta_db.insert_one({"text" : new_pasta})
             await ctx.send("New pasta added.")
@@ -104,8 +104,8 @@ async def rm_pasta(ctx, pasta_id=""):
         await ctx.send("Must use command in server.")
     elif not pasta_id:
         await ctx.send("Please provide a pasta ID.")
-    elif not has_role(ctx, config.get_role(ctx.guild.name, "admin")):
-        await ctx.send("Must have '" + config.get_role(ctx.guild.name, "admin") + "' role to use this command.")
+    elif not has_role(ctx, config.get_role(ctx.guild, "admin")):
+        await ctx.send("Must have '" + config.get_role(ctx.guild, "admin") + "' role to use this command.")
     else:
         try:
             query = {"_id" : ObjectId(pasta_id)}
@@ -136,9 +136,6 @@ async def purge(ctx, purgenum = ""):
         await ctx.send("Purged " + str(len(purge_list)) + " messages.")
 
 
-
-
-
 @discord_client.command(pass_context=True)
 async def nword(ctx):
     if is_private(ctx):
@@ -155,8 +152,8 @@ async def nword(ctx):
 async def close(ctx):
     if is_private(ctx):
         await ctx.send("Must use command in server.")
-    elif not has_role(ctx, config.get_role(ctx.guild.name, "admin")):
-        await ctx.send("Must have '" + config.get_role(ctx.guild.name, "admin") + "' role to use this command.")
+    elif not has_role(ctx, config.get_role(ctx.guild, "admin")):
+        await ctx.send("Must have '" + config.get_role(ctx.guild, "admin") + "' role to use this command.")
     else:
         await ctx.send("**CY@**")
         config.update_config_json()
