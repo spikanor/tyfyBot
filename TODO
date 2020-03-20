@@ -1,0 +1,6 @@
+Fix stream notification double-ping
+ty!help - list all commands
+Add guild_id tag to copypastas on database
+Be able to add non-ASCII values for copy-pastas
+Be able to set default channels and roles in config.json
+Figure out how to run on a server
