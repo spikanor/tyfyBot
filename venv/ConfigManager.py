@@ -52,4 +52,5 @@ class ConfigManager:
             exit(1)
         except FileNotFoundError:
             print("config.json not found")
+            print("changed")
             exit(1)
