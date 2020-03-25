@@ -37,9 +37,9 @@ async def check_twitch_live():
                     twitch_db.update_one(query, {"$set": {"is_live": True}})
                     streamer_guild = discord_client.get_guild(streamer["guild_id"])
                     streamer_member = streamer_guild.get_member_named(streamer["discord_name"])
-                    streams_channel = discord.utils.get(streamer_guild.text_channels, name=config.get_channel(streamer_guild.name, "live_streams"))
+                    streams_channel = discord.utils.get(streamer_guild.text_channels, name=config.get_channel(streamer_guild, "live_streams"))
                     if streams_channel:
-                        print(streamer_member.name + " from guild " + streamer_guild.name + " live")
+                        print(streamer_member.name + " from guild '" + streamer_guild.name + "' is now live")
                         await streams_channel.send(streamer_member.mention + " is now live at " + config.TWITCH_URL + streamer["twitch_name"])
                 elif not data["data"] and streamer["is_live"]:
                     twitch_db.update_one(query, {"$set": {"is_live": False}})
@@ -119,9 +119,9 @@ async def rm_pasta(ctx, pasta_id=""):
             await ctx.send("Deleted.")
 
 @discord_client.command(pass_context=True)
-async def purge(ctx, purgenum = ""):
+async def purge(ctx, purge_num = ""):
     try:
-        n = int(purgenum)
+        n = int(purge_num)
     except ValueError:
         await ctx.send("Please enter a number.")
         return
@@ -132,7 +132,7 @@ async def purge(ctx, purgenum = ""):
     elif n < 0:
         await ctx.send("Please enter a positive number.")
     else:
-        purge_list = await ctx.message.channel.purge(limit=int(purgenum) + 1)
+        purge_list = await ctx.message.channel.purge(limit=int(purge_num) + 1)
         await ctx.send("Purged " + str(len(purge_list)) + " messages.")
 
 
