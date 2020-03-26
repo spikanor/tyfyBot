@@ -7,6 +7,11 @@
       "admin": "admin-channel"
     }
   },
+  "688015603185090680": {
+    "channels": {
+      "live_streams": ":movie_camera:-live-streams"
+    }
+  },
   "default": {
     "roles": {
       "admin": "admin",

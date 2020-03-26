@@ -34,11 +34,11 @@ async def check_twitch_live():
             query = {"twitch_name" : streamer["twitch_name"], "guild_id" : streamer["guild_id"]}
             try:
                 if data["data"] and not streamer["is_live"]:
-                    twitch_db.update_one(query, {"$set": {"is_live": True}})
                     streamer_guild = discord_client.get_guild(streamer["guild_id"])
                     streamer_member = streamer_guild.get_member_named(streamer["discord_name"])
                     streams_channel = discord.utils.get(streamer_guild.text_channels, name=config.get_channel(streamer_guild, "live_streams"))
                     if streams_channel:
+                        twitch_db.update_one(query, {"$set": {"is_live": True}})
                         print(streamer_member.name + " from guild '" + streamer_guild.name + "' is now live")
                         await streams_channel.send(streamer_member.mention + " is now live at " + config.TWITCH_URL + streamer["twitch_name"])
                 elif not data["data"] and streamer["is_live"]:
