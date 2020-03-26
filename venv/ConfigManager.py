@@ -5,11 +5,13 @@ from json import JSONDecodeError
 import exceptions
 
 class ConfigManager:
-    guild_data_path = "guilds.json"
+    guild_data_path = "venv/guilds.json"
     def __init__(self):
-        print(os.listdir(os.getcwd()))
+        self.ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
+        while os.path.basename(self.ROOT_DIR) != "tyfyBot":
+            self.ROOT_DIR = os.path.dirname(self.ROOT_DIR)
         try:
-            with open(self.guild_data_path, 'r') as guild_file:
+            with open(os.path.join(self.ROOT_DIR, self.guild_data_path), 'r') as guild_file:
                 self.guild_data = json.load(guild_file)
         except ValueError and JSONDecodeError:
             print("Invalid JSON file")
