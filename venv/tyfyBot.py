@@ -4,18 +4,17 @@ import pymongo
 from pymongo import MongoClient
 import requests
 import asyncio
-import random
 import bson
 from bson import ObjectId
 
 import ConfigManager
+import DBManager
 import exceptions
 
 # Objects
 config = ConfigManager.ConfigManager()
+db = DBManager.DBManager(config.MONGODB_TOKEN)
 mongo_client = MongoClient(config.MONGODB_TOKEN)
-twitch_db = mongo_client["tyfyBot"]["Twitch"]
-pasta_db = mongo_client["tyfyBot"]["Pastas"]
 discord_client = commands.Bot(command_prefix='ty!')
 
 
@@ -28,23 +27,22 @@ async def on_ready():
 async def check_twitch_live():
     await discord_client.wait_until_ready()
     while not discord_client.is_closed():
-        streamers = twitch_db.find({})
+        streamers = db.get_all_streamers()
         for streamer in streamers:
             data = twitch_get(config.TWITCH_STREAMS_API, {"user_login" : streamer["twitch_name"]})
-            query = {"twitch_name" : streamer["twitch_name"], "guild_id" : streamer["guild_id"]}
             try:
                 if data["data"] and not streamer["is_live"]:
                     streamer_guild = discord_client.get_guild(streamer["guild_id"])
                     streamer_member = streamer_guild.get_member_named(streamer["discord_name"])
-                    streams_channel = discord.utils.get(streamer_guild.text_channels, name=config.get_channel(streamer_guild, "live_streams"))
+                    streams_channel = discord.utils.get(streamer_guild.text_channels, name=db.get_guild_channel(streamer_guild, "live_streams"))
                     if streams_channel:
-                        twitch_db.update_one(query, {"$set": {"is_live": True}})
+                        db.set_live(streamer["twitch_name"], streamer["guild_id"], True)
                         print(streamer_member.name + " from guild '" + streamer_guild.name + "' is now live")
                         await streams_channel.send(streamer_member.mention + " is now live at " + config.TWITCH_URL + streamer["twitch_name"])
                     else:
-                        print(config.get_channel(streamer_guild, "live_streams" + " not found."))
+                        print(db.get_guild_channel(streamer_guild, "live_streams" + " not found."))
                 elif not data["data"] and streamer["is_live"]:
-                    twitch_db.update_one(query, {"$set": {"is_live": False}})
+                        db.set_live(streamer["twitch_name"], streamer["guild_id"], False)
             except KeyError:
                 continue
         await asyncio.sleep(20)
@@ -55,15 +53,14 @@ async def check_twitch_live():
 async def twitchname(ctx, twitch_name=""):
     if is_private(ctx):
         await ctx.send("Use this command in a server.")
-    elif not has_role(ctx, config.get_role(ctx.guild, "twitch_streamer")):
-        await ctx.send("Must have the '" + config.get_role(ctx.guild, "twitch_streamer") + "' role to use this command.")
+    elif not has_role(ctx, db.get_guild_role(ctx.guild, "twitch_streamer")):
+        await ctx.send("Must have the '" + db.get_guild_role(ctx.guild, "twitch_streamer") + "' role to use this command.")
     else:
         if not is_clean_input(twitch_name):
             await ctx.send("Please enter ASCII characters only.")
             return
         guild_id = ctx.message.channel.guild.id
         discord_name = str(ctx.message.author)
-        query = {"discord_name": discord_name, "guild_id" : guild_id}
 
         # Set twitch name
         if twitch_name:
@@ -71,33 +68,40 @@ async def twitchname(ctx, twitch_name=""):
             if not data["data"]:
                 await ctx.send("Invalid username.")
             else:
-                if twitch_db.find(query).count() > 0:
-                    twitch_db.update_one(query, {"$set": {"twitch_name": twitch_name}})
+                if db.set_twitchname(discord_name, guild_id, twitch_name):
                     await ctx.send("Updated!")
                 else:
-                    twitch_db.insert_one({"discord_name" : discord_name, "twitch_name" : twitch_name,
-                                          "guild_id" : guild_id, "is_live" : False})
                     await ctx.send("Twitch name is now " + twitch_name + ".")
         # Query twitch name
         else:
-            if twitch_db.find(query).count() > 0:
-                twitch_name = twitch_db.find_one(query)["twitch_name"]
+            twitch_name = db.get_twitchname(discord_name, guild_id)
+            if twitch_name:
                 await ctx.send("Your current Twitch username is " + twitch_name + ".")
             else:
                 await ctx.send("Twitch name not set.")
 
+# @discord_client.command(pass_context=True)
+# async def set_role(ctx, role, role_name):
+#     if is_private(ctx):
+#         await ctx.send("Must use command in server.")
+#     elif not (role and rolename):
+#         await ctx.send("Please enter a <role> to replace with <rolename>")
+#     elif
+
 @discord_client.command(pass_context=True)
 async def pasta(ctx, new_pasta=""):
-    if new_pasta:
+    if is_private(ctx):
+        await ctx.send("Must use command in server.")
+    elif new_pasta:
         if not is_clean_input(new_pasta):
             await ctx.send("Please enter ASCII characters only.")
-        elif not has_role(ctx, config.get_role(ctx.guild, "admin")):
-            await ctx.send("Must have '" + config.get_role(ctx.guild, "admin") + "' role to use this command.")
+        elif not has_role(ctx, db.get_guild_role(ctx.guild, "admin")):
+            await ctx.send("Must have '" + db.get_guild_role(ctx.guild, "admin") + "' role to use this command.")
         else:
-            pasta_db.insert_one({"text" : new_pasta})
+            db.add_pasta(new_pasta)
             await ctx.send("New pasta added.")
     else:
-        random_pasta = pasta_db.find()[random.randrange(pasta_db.count())]
+        random_pasta = db.get_random_pasta()
         await ctx.send(random_pasta["text"] + block_text("ID: " + str(random_pasta["_id"])))
 
 @discord_client.command(pass_context=True)
@@ -106,18 +110,15 @@ async def rm_pasta(ctx, pasta_id=""):
         await ctx.send("Must use command in server.")
     elif not pasta_id:
         await ctx.send("Please provide a pasta ID.")
-    elif not has_role(ctx, config.get_role(ctx.guild, "admin")):
-        await ctx.send("Must have '" + config.get_role(ctx.guild, "admin") + "' role to use this command.")
+    elif not has_role(ctx, db.get_guild_role(ctx.guild, "admin")):
+        await ctx.send("Must have '" + db.get_guild_role(ctx.guild, "admin") + "' role to use this command.")
     else:
-        try:
-            query = {"_id" : ObjectId(pasta_id)}
-        except bson.errors.InvalidId:
+        deleted = db.remove_pasta_by_id(pasta_id)
+        if deleted == -1:
             await ctx.send("Invalid ID.")
-            return
-        if pasta_db.find(query).count() == 0:
+        elif deleted == 0:
             await ctx.send("Pasta ID not found.")
         else:
-            pasta_db.delete_one(query)
             await ctx.send("Deleted.")
 
 @discord_client.command(pass_context=True)
@@ -154,8 +155,8 @@ async def nword(ctx):
 async def close(ctx):
     if is_private(ctx):
         await ctx.send("Must use command in server.")
-    elif not has_role(ctx, config.get_role(ctx.guild, "admin")):
-        await ctx.send("Must have '" + config.get_role(ctx.guild, "admin") + "' role to use this command.")
+    elif not has_role(ctx, db.get_guild_role(ctx.guild, "admin")):
+        await ctx.send("Must have '" + db.get_guild_role(ctx.guild, "admin") + "' role to use this command.")
     else:
         await ctx.send("**CY@**")
         config.update_guild_data()
