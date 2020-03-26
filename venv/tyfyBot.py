@@ -37,8 +37,6 @@ async def check_twitch_live():
                     streamer_guild = discord_client.get_guild(streamer["guild_id"])
                     streamer_member = streamer_guild.get_member_named(streamer["discord_name"])
                     streams_channel = discord.utils.get(streamer_guild.text_channels, name=config.get_channel(streamer_guild, "live_streams"))
-                    for channel in streamer_guild.text_channels:
-                        print(channel.name)
                     if streams_channel:
                         twitch_db.update_one(query, {"$set": {"is_live": True}})
                         print(streamer_member.name + " from guild '" + streamer_guild.name + "' is now live")
