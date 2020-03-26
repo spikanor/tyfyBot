@@ -59,7 +59,7 @@ async def twitchname(ctx, twitch_name=""):
         if not is_clean_input(twitch_name):
             await ctx.send("Please enter ASCII characters only.")
             return
-        guild_id = ctx.message.channel.guild.id
+        guild_id = ctx.guild.id
         discord_name = str(ctx.message.author)
 
         # Set twitch name
@@ -98,11 +98,14 @@ async def pasta(ctx, new_pasta=""):
         elif not has_role(ctx, db.get_guild_role(ctx.guild, "admin")):
             await ctx.send("Must have '" + db.get_guild_role(ctx.guild, "admin") + "' role to use this command.")
         else:
-            db.add_pasta(new_pasta)
+            db.add_pasta(new_pasta, ctx.guild.id)
             await ctx.send("New pasta added.")
     else:
-        random_pasta = db.get_random_pasta()
-        await ctx.send(random_pasta["text"] + block_text("ID: " + str(random_pasta["_id"])))
+        random_pasta = db.get_random_pasta(ctx.guild.id)
+        if random_pasta == -1:
+            await ctx.send("Pasta DB empty.")
+        else:
+            await ctx.send(random_pasta["text"] + "\n" + block_text("ID: " + str(random_pasta["_id"])))
 
 @discord_client.command(pass_context=True)
 async def rm_pasta(ctx, pasta_id=""):
@@ -113,7 +116,7 @@ async def rm_pasta(ctx, pasta_id=""):
     elif not has_role(ctx, db.get_guild_role(ctx.guild, "admin")):
         await ctx.send("Must have '" + db.get_guild_role(ctx.guild, "admin") + "' role to use this command.")
     else:
-        deleted = db.remove_pasta_by_id(pasta_id)
+        deleted = db.remove_pasta_by_id(pasta_id, ctx.guild.id)
         if deleted == -1:
             await ctx.send("Invalid ID.")
         elif deleted == 0:
@@ -179,7 +182,7 @@ def is_clean_input(input_string):
     return len(input_string) == len(input_string.encode())
 
 def block_text(text):
-    return "`\n" + text + "\n`"
+    return "`" + text + "`"
 
 
 discord_client.loop.create_task(check_twitch_live())

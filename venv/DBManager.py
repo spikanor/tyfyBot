@@ -16,24 +16,24 @@ class DBManager:
 
     # Twitch DB
     def set_twitchname(self, discord_name, guild_id, twitch_name):
-        query = {"discord_name": discord_name, "guild_id": guild_id}
+        query = {"discord_name": discord_name, "guild_id": str(guild_id)}
         if self.twitch_db.find(query).count() > 0:
             self.twitch_db.update_one(query, {"$set": {"twitch_name": twitch_name}})
             return 1
         else:
             self.twitch_db.insert_one({"discord_name": discord_name, "twitch_name": twitch_name,
-                                  "guild_id": guild_id, "is_live": False})
+                                  "guild_id": str(guild_id), "is_live": False})
             return 0
 
     def get_twitchname(self, discord_name, guild_id):
-        query = {"discord_name": discord_name, "guild_id": guild_id}
+        query = {"discord_name": discord_name, "guild_id": str(guild_id)}
         if self.twitch_db.find(query).count() > 0:
             return self.twitch_db.find_one(query)["twitch_name"]
         else:
             return ""
 
     def set_live(self, twitch_name, guild_id, is_live):
-        query = {"twitch_name" : twitch_name, "guild_id" : guild_id}
+        query = {"twitch_name" : twitch_name, "guild_id" : str(guild_id)}
         self.twitch_db.update_one(query, {"$set": {"is_live": is_live}})
 
     def get_all_streamers(self):
@@ -41,12 +41,16 @@ class DBManager:
 
 
     # Pasta DB
-    def get_random_pasta(self):
-        return self.pasta_db.find()[random.randrange(self.pasta_db.count())]
+    def get_random_pasta(self, guild_id):
+        guild_pastas = self.pasta_db.find({"guild_id": str(guild_id)})
+        if guild_pastas.count():
+            return guild_pastas[random.randrange(guild_pastas.count())]
+        else:
+            return -1
 
-    def remove_pasta_by_id(self, pasta_id):
+    def remove_pasta_by_id(self, pasta_id, guild_id):
         try:
-            query = {"_id" : ObjectId(pasta_id)}
+            query = {"_id" : ObjectId(pasta_id), "guild_id": str(guild_id)}
         except bson.errors.InvalidId:
             return -1
 
@@ -56,8 +60,8 @@ class DBManager:
             self.pasta_db.delete_one(query)
             return 1
 
-    def add_pasta(self, pasta_text):
-        self.pasta_db.insert_one({"text": pasta_text})
+    def add_pasta(self, pasta_text, guild_id):
+        self.pasta_db.insert_one({"text": pasta_text, "guild_id": str(guild_id)})
 
 
     # Guilds DB
