@@ -8,9 +8,9 @@ class ConfigManager:
     guild_data_path = "venv/guilds.json"
     def __init__(self):
         self.ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
-        while os.path.basename(self.ROOT_DIR) != "tyfyBot":
+        if os.path.basename(self.ROOT_DIR) == "venv":
             self.ROOT_DIR = os.path.dirname(self.ROOT_DIR)
-            print(self.ROOT_DIR)
+        print(self.ROOT_DIR)
         try:
             with open(os.path.join(self.ROOT_DIR, self.guild_data_path), 'r') as guild_file:
                 self.guild_data = json.load(guild_file)
