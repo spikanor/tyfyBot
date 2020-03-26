@@ -127,7 +127,7 @@ async def purge(ctx, purge_num = ""):
         return
     if is_private(ctx):
         await ctx.send("Must use command in server.")
-    elif not purgenum:
+    elif not purge_num:
         await ctx.send("Enter a number to purge.")
     elif n < 0:
         await ctx.send("Please enter a positive number.")
@@ -156,7 +156,7 @@ async def close(ctx):
         await ctx.send("Must have '" + config.get_role(ctx.guild, "admin") + "' role to use this command.")
     else:
         await ctx.send("**CY@**")
-        config.update_config_json()
+        config.update_guild_data()
         await discord_client.close()
 
 

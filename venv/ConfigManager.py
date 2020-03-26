@@ -1,56 +1,58 @@
+import os
 import json
 from json import JSONDecodeError
 
 import exceptions
 
 class ConfigManager:
-    config_path = "config.json"
+    guild_data_path = "guilds.json"
     def __init__(self):
         try:
-            with open(self.config_path, 'r') as config_file:
-                self.config = json.load(config_file)
+            with open(self.guild_data_path, 'r') as guild_file:
+                self.guild_data = json.load(guild_file)
         except ValueError and JSONDecodeError:
             print("Invalid JSON file")
             exit(1)
         except FileNotFoundError:
-            print("config.json not found")
+            print("guilds.json not found")
             exit(1)
 
         # Constants
-        self.MONGODB_TOKEN = self.config["mongodb_token"]
-        self.DISCORD_TOKEN = self.config["discord_token"]
-        self.TWITCH_CLIENT_ID = self.config["twitch_client_id"]
-        self.TWITCH_URL = self.config["twitch_links"]["twitch_url"]
-        self.TWITCH_STREAMS_API = self.config["twitch_links"]["twitch_streams_api"]
-        self.TWITCH_USERS_API = self.config["twitch_links"]["twitch_users_api"]
+        self.TWITCH_URL = "https://twitch.tv/"
+        self.TWITCH_STREAMS_API = "https://api.twitch.tv/helix/streams"
+        self.TWITCH_USERS_API = "https://api.twitch.tv/helix/users"
+
+        # Environment variables
+        self.MONGODB_TOKEN = os.environ["MONGODB_TOKEN"]
+        self.DISCORD_TOKEN = os.environ["DISCORD_TOKEN"]
+        self.TWITCH_CLIENT_ID = os.environ["TWITCH_CLIENT_ID"]
 
 
     def get_role(self, guild, role):
-        return self.config_get(str(guild.id), "roles", role)
+        return self.guild_data_get(str(guild.id), "roles", role)
 
     def get_channel(self, guild, channel):
-        return self.config_get(str(guild.id), "channels", channel)
+        return self.guild_data_get(str(guild.id), "channels", channel)
 
-    def config_get(self, guild_id, group, element):
-        if guild_id in self.config["guilds"] and \
-                group in self.config["guilds"][guild_id] and \
-                element in self.config["guilds"][guild_id][group]:
-            return self.config["guilds"][guild_id][group][element]
+    def guild_data_get(self, guild_id, group, element):
+        if guild_id in self.guild_data and \
+                group in self.guild_data[guild_id] and \
+                element in self.guild_data[guild_id][group]:
+            return self.guild_data[guild_id][group][element]
         else:
             try:
-                return self.config["guilds"]["default"][group][element]
+                return self.guild_data["default"][group][element]
             except KeyError:
                 # Handle not found in default
                 raise
 
-    def update_config_json(self):
+    def update_guild_data(self):
         try:
-            with open(self.config_path, 'w') as config_file:
-                self.config = json.dump(self.config, config_file, indent=2)
+            with open(self.guild_data_path, 'w') as config_file:
+                self.guild_data = json.dump(self.guild_data, config_file, indent=2)
         except ValueError and JSONDecodeError:
             print("Invalid JSON file")
             exit(1)
         except FileNotFoundError:
-            print("config.json not found")
-            print("changed")
+            print("guilds.json not found")
             exit(1)

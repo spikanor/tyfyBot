@@ -1,0 +1,20 @@
+{
+  "688297423705079991": {
+    "roles": {
+      "admin": "admins"
+    },
+    "channels": {
+      "admin": "admin-channel"
+    }
+  },
+  "default": {
+    "roles": {
+      "admin": "admin",
+      "twitch_streamer": "Twitch Streamer"
+    },
+    "channels": {
+      "live_streams": "live-streams",
+      "admin": "admin"
+    }
+  }
+}
