@@ -7,6 +7,7 @@ import exceptions
 class ConfigManager:
     guild_data_path = "guilds.json"
     def __init__(self):
+        print(os.listdir(os.getcwd()))
         try:
             with open(self.guild_data_path, 'r') as guild_file:
                 self.guild_data = json.load(guild_file)
