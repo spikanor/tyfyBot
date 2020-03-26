@@ -32,7 +32,7 @@ async def check_twitch_live():
             data = twitch_get(config.TWITCH_STREAMS_API, {"user_login" : streamer["twitch_name"]})
             try:
                 if data["data"] and not streamer["is_live"]:
-                    streamer_guild = discord_client.get_guild(streamer["guild_id"])
+                    streamer_guild = discord_client.get_guild(int(streamer["guild_id"]))
                     streamer_member = streamer_guild.get_member_named(streamer["discord_name"])
                     streams_channel = discord.utils.get(streamer_guild.text_channels, name=db.get_guild_channel(streamer_guild, "live_streams"))
                     if streams_channel:
@@ -42,6 +42,7 @@ async def check_twitch_live():
                     else:
                         print(db.get_guild_channel(streamer_guild, "live_streams" + " not found."))
                 elif not data["data"] and streamer["is_live"]:
+                        print(streamer["twitch_name"] + " just went offline.")
                         db.set_live(streamer["twitch_name"], streamer["guild_id"], False)
             except KeyError:
                 continue
