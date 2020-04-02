@@ -14,7 +14,6 @@ import exceptions
 # Objects
 config = ConfigManager.ConfigManager()
 db = DBManager.DBManager(config.MONGODB_TOKEN)
-mongo_client = MongoClient(config.MONGODB_TOKEN)
 discord_client = commands.Bot(command_prefix='ty!')
 
 
@@ -38,11 +37,13 @@ async def check_twitch_live():
                     if streams_channel:
                         db.set_live(streamer["twitch_name"], streamer["guild_id"], True)
                         print(streamer_member.name + " from guild '" + streamer_guild.name + "' is now live")
-                        await streams_channel.send(streamer_member.mention + " is now live at " + config.TWITCH_URL + streamer["twitch_name"])
+                        await streams_channel.send(streamer_member.mention + " is now live at " + config.TWITCH_URL + streamer["twitch_name"]
+                                                   + subscriber_mention(streamer_guild, streamer_memberr))
                     else:
                         print(db.get_guild_channel(streamer_guild, "live_streams" + " not found."))
                 elif not data["data"] and streamer["is_live"]:
-                        print(streamer["twitch_name"] + " just went offline.")
+                        streamer_guild = discord_client.get_guild(int(streamer["guild_id"]))
+                        print(streamer["twitch_name"] + " in guild " + streamer_guild.name + " just went offline.")
                         db.set_live(streamer["twitch_name"], streamer["guild_id"], False)
             except KeyError:
                 continue
@@ -54,7 +55,7 @@ async def check_twitch_live():
 async def twitchname(ctx, twitch_name=""):
     if is_private(ctx):
         await ctx.send("Use this command in a server.")
-    elif not has_role(ctx, db.get_guild_role(ctx.guild, "twitch_streamer")):
+    elif not has_role(ctx.message.author, db.get_guild_role(ctx.guild, "twitch_streamer")):
         await ctx.send("Must have the '" + db.get_guild_role(ctx.guild, "twitch_streamer") + "' role to use this command.")
     else:
         if not is_clean_input(twitch_name):
@@ -85,8 +86,8 @@ async def twitchname(ctx, twitch_name=""):
 # async def set_role(ctx, role, role_name):
 #     if is_private(ctx):
 #         await ctx.send("Must use command in server.")
-#     elif not (role and rolename):
-#         await ctx.send("Please enter a <role> to replace with <rolename>")
+#     elif not (role):
+#         await ctx.send("Please enter a role to set.")
 #     elif
 
 @discord_client.command(pass_context=True)
@@ -96,7 +97,7 @@ async def pasta(ctx, new_pasta=""):
     elif new_pasta:
         if not is_clean_input(new_pasta):
             await ctx.send("Please enter ASCII characters only.")
-        elif not has_role(ctx, db.get_guild_role(ctx.guild, "admin")):
+        elif not has_role(ctx.message.author, db.get_guild_role(ctx.guild, "admin")):
             await ctx.send("Must have '" + db.get_guild_role(ctx.guild, "admin") + "' role to use this command.")
         else:
             db.add_pasta(new_pasta, ctx.guild.id)
@@ -114,7 +115,7 @@ async def rm_pasta(ctx, pasta_id=""):
         await ctx.send("Must use command in server.")
     elif not pasta_id:
         await ctx.send("Please provide a pasta ID.")
-    elif not has_role(ctx, db.get_guild_role(ctx.guild, "admin")):
+    elif not has_role(ctx.message.author, db.get_guild_role(ctx.guild, "admin")):
         await ctx.send("Must have '" + db.get_guild_role(ctx.guild, "admin") + "' role to use this command.")
     else:
         deleted = db.remove_pasta_by_id(pasta_id, ctx.guild.id)
@@ -159,7 +160,7 @@ async def nword(ctx):
 async def close(ctx):
     if is_private(ctx):
         await ctx.send("Must use command in server.")
-    elif not has_role(ctx, db.get_guild_role(ctx.guild, "admin")):
+    elif not has_role(ctx.message.author, db.get_guild_role(ctx.guild, "admin")):
         await ctx.send("Must have '" + db.get_guild_role(ctx.guild, "admin") + "' role to use this command.")
     else:
         await ctx.send("**CY@**")
@@ -171,8 +172,16 @@ async def close(ctx):
 def is_private(ctx):
     return ctx.message.channel.type == discord.ChannelType.private
 
-def has_role(ctx, role_name):
-    return discord.utils.get(ctx.guild.roles, name=role_name) in ctx.message.author.roles
+def has_role(member, role_name):
+    return get_role(member, role_name) in member.roles
+
+def get_role(guild, role_name):
+    return discord.utils.get(guild.roles, name=role_name)
+
+def subscriber_mention(streamer_guild, streamer_member):
+    is_guild_streamer = has_role(streamer_member, db.get_guild_role(streamer_guild, "guild_streamer"))
+    twitch_subscriber_role = get_role(streamer_guild, "Twitch Subscriber")
+    return ("\n" + twitch_subscriber_role.mention) if (is_guild_streamer and twitch_subscriber_role) else ""
 
 def twitch_get(url, params):
     header = {"Client-ID": config.TWITCH_CLIENT_ID}
