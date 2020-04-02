@@ -38,7 +38,7 @@ async def check_twitch_live():
                         db.set_live(streamer["twitch_name"], streamer["guild_id"], True)
                         print(streamer_member.name + " from guild '" + streamer_guild.name + "' is now live")
                         await streams_channel.send(streamer_member.mention + " is now live at " + config.TWITCH_URL + streamer["twitch_name"]
-                                                   + subscriber_mention(streamer_guild, streamer_memberr))
+                                                   + subscriber_mention(streamer_guild, streamer_member))
                     else:
                         print(db.get_guild_channel(streamer_guild, "live_streams" + " not found."))
                 elif not data["data"] and streamer["is_live"]:
