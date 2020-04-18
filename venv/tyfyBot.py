@@ -189,7 +189,7 @@ def twitch_get(url, params):
     return request.json()
 
 def is_clean_input(input_string):
-    return len(input_string) == len(input_string.encode())
+    return len(input_string) == len(input_string.encode('ascii', errors='ignore'))
 
 def block_text(text):
     return "`" + text + "`"
