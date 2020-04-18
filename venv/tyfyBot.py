@@ -6,6 +6,7 @@ import requests
 import asyncio
 import bson
 from bson import ObjectId
+import string
 
 import ConfigManager
 import DBManager
@@ -90,15 +91,15 @@ async def twitchname(ctx, twitch_name=""):
 #         await ctx.send("Please enter a role to set.")
 #     elif
 
-@discord_client.command(pass_context=True)
-async def pasta(ctx, new_pasta=""):
+@discord_client.command(pass_context=True, rest_is_raw=True)
+async def pasta(ctx, *, new_pasta):
     if is_private(ctx):
         await ctx.send("Must use command in server.")
     elif new_pasta:
         if not is_clean_input(new_pasta):
             await ctx.send("Please enter ASCII characters only.")
-        elif not has_role(ctx.message.author, db.get_guild_role(ctx.guild, "admin")):
-            await ctx.send("Must have '" + db.get_guild_role(ctx.guild, "admin") + "' role to use this command.")
+        elif not has_role(ctx.message.author, db.get_guild_role(ctx.guild, "pasta_master")):
+            await ctx.send("Must have '" + db.get_guild_role(ctx.guild, "pasta_master") + "' role to use this command.")
         else:
             db.add_pasta(new_pasta, ctx.guild.id)
             await ctx.send("New pasta added.")
@@ -115,8 +116,8 @@ async def rm_pasta(ctx, pasta_id=""):
         await ctx.send("Must use command in server.")
     elif not pasta_id:
         await ctx.send("Please provide a pasta ID.")
-    elif not has_role(ctx.message.author, db.get_guild_role(ctx.guild, "admin")):
-        await ctx.send("Must have '" + db.get_guild_role(ctx.guild, "admin") + "' role to use this command.")
+    elif not has_role(ctx.message.author, db.get_guild_role(ctx.guild, "pasta_master")):
+        await ctx.send("Must have '" + db.get_guild_role(ctx.guild, "pasta_master") + "' role to use this command.")
     else:
         deleted = db.remove_pasta_by_id(pasta_id, ctx.guild.id)
         if deleted == -1:
@@ -189,7 +190,7 @@ def twitch_get(url, params):
     return request.json()
 
 def is_clean_input(input_string):
-    return len(input_string) == len(input_string.encode('ascii', errors='ignore'))
+    return len(input_string) == len(input_string.encode('utf-8').decode('utf-8'))
 
 def block_text(text):
     return "`" + text + "`"
