@@ -181,7 +181,7 @@ def get_role(guild, role_name):
 
 def subscriber_mention(streamer_guild, streamer_member):
     is_guild_streamer = has_role(streamer_member, db.get_guild_role(streamer_guild, "guild_streamer"))
-    twitch_subscriber_role = get_role(streamer_guild, "Twitch Subscriber")
+    twitch_subscriber_role = get_role(streamer_guild, db.get_guild_role(streamer_guild, "twitch_subscriber"))
     return ("\n" + twitch_subscriber_role.mention) if (is_guild_streamer and twitch_subscriber_role) else ""
 
 def twitch_get(url, params):
