@@ -180,9 +180,16 @@ def get_role(guild, role_name):
     return discord.utils.get(guild.roles, name=role_name)
 
 def subscriber_mention(streamer_guild, streamer_member):
-    is_guild_streamer = has_role(streamer_member, db.get_guild_role(streamer_guild, "guild_streamer"))
-    twitch_subscriber_role = get_role(streamer_guild, db.get_guild_role(streamer_guild, "twitch_subscriber"))
-    return ("\n" + twitch_subscriber_role.mention) if (is_guild_streamer and twitch_subscriber_role) else ""
+    if has_role(streamer_member, db.get_guild_role(streamer_guild, "guild_streamer")):
+        twitch_sub_role = db.get_guild_role(streamer_guild, "twitch_subscriber")
+        if twitch_sub_role == "everyone":
+            twitch_sub_mention = "@everyone"
+        elif has_role(streamer_guild, twitch_sub_role):
+            twitch_sub_mention = get_role(streamer_guild, twitch_sub_role).mention
+        else:
+            return ""
+        return "\n" + twitch_sub_mention
+    return ""
 
 def twitch_get(url, params):
     header = {"Client-ID": config.TWITCH_CLIENT_ID}
