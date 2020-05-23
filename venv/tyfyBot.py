@@ -192,8 +192,10 @@ def subscriber_mention(streamer_guild, streamer_member):
     return ""
 
 def twitch_get(url, params):
-    header = {"Client-ID": config.TWITCH_CLIENT_ID}
+    header = {"Authorization": "Bearer " + "config.TWITCH_OAUTH_TOKEN", "Client-ID": config.TWITCH_CLIENT_ID}
     request = requests.get(url=url, params=params, headers=header)
+    print(request.json())
+    exit(0)
     return request.json()
 
 def is_clean_input(input_string):

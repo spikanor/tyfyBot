@@ -15,3 +15,4 @@ class ConfigManager:
         self.MONGODB_TOKEN = os.environ["MONGODB_TOKEN"]
         self.DISCORD_TOKEN = os.environ["DISCORD_TOKEN"]
         self.TWITCH_CLIENT_ID = os.environ["TWITCH_CLIENT_ID"]
+        self.TWITCH_OAUTH_TOKEN = os.environ["TWITCH_OAUTH_TOKEN"]
