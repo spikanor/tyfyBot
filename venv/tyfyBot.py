@@ -146,14 +146,14 @@ async def purge(ctx, purge_num = ""):
 
 
 @discord_client.command(pass_context=True)
-async def nword(ctx):
+async def lmao(ctx):
     if is_private(ctx):
-        await ctx.send("Try that shit in a server, I dare you.")
+        await ctx.send("Try that in a server, I dare you.")
     else:
         try:
             await ctx.send("Later, " + ctx.message.author.name + ".")
-            await ctx.message.author.kick(reason="get fucked idiot")
-            await discord_client.send_message(ctx.message.author, "get fucked idiot")
+            await ctx.message.author.kick(reason="lmao")
+            await discord_client.send_message(ctx.message.author, "lmao")
         except discord.Forbidden:
             await ctx.send("You'll get away, this time.")
 
@@ -191,10 +191,24 @@ def subscriber_mention(streamer_guild, streamer_member):
         return "\n" + twitch_sub_mention
     return ""
 
+def validate_twitch_oauth():
+    header = {"Authorization": "OAuth " + config.TWITCH_OAUTH_TOKEN}
+    response = requests.get(url=config.TWITCH_OAUTH_VALIDATE, headers=header)
+    if "status" in response.json():
+        generate_twitch_oauth()
+
+def generate_twitch_oauth():
+    params = {"client_id": config.TWITCH_CLIENT_ID, "client_secret": config.TWITCH_CLIENT_SECRET,
+              "grant_type": "client_credentials"}
+    response = requests.post(url=config.TWITCH_OAUTH_API, params=params)
+    config.set_oauth(response.json()["access_token"])
+
 def twitch_get(url, params):
-    header = {"Authorization": "Bearer " + "config.TWITCH_OAUTH_TOKEN", "Client-ID": config.TWITCH_CLIENT_ID}
-    request = requests.get(url=url, params=params, headers=header)
-    return request.json()
+    validate_twitch_oauth()
+    header = {"Authorization": "Bearer " + config.TWITCH_OAUTH_TOKEN, "Client-ID": config.TWITCH_CLIENT_ID}
+    response = requests.get(url=url, params=params, headers=header)
+    print(response.json())
+    return response.json()
 
 def is_clean_input(input_string):
     return len(input_string) == len(input_string.encode('utf-8').decode('utf-8'))
